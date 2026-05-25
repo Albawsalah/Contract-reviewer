@@ -1,4 +1,3 @@
-cat > /mnt/user-data/outputs/ContractReviewer_v3.jsx << 'ENDOFFILE'
 import { useState, useRef, useEffect } from "react";
 
 const C = {
@@ -539,5 +538,3 @@ export default function ContractReviewer(){
     </>
   );
 }
-ENDOFFILE
-echo "done"
