@@ -1,104 +1,64 @@
+cat > /mnt/user-data/outputs/FINAL_analyze.js << 'EOF'
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
+  
   const { messages } = req.body;
   if (!messages) return res.status(400).json({ error: "no messages" });
+  
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "API key not configured" });
+  if (!apiKey) return res.status(500).json({ error: "no api key" });
 
-  const system = `You are an expert contract reviewer combining three roles:
-1. Senior Procurement & Contracts Manager with 20 years experience in Saudi Arabia
-2. Legal Consultant specialized in commercial contracts under Saudi law
-3. Expert commercial negotiator in the Saudi market
+  const system = `أنت خبير مراجعة عقود في السعودية.
 
-CRITICAL LANGUAGE RULE: Detect the language of the contract text. If Arabic → respond entirely in Arabic. If English → respond entirely in English. Match your response language to the contract language exactly.
+قاعدة اللغة: إذا كان العقد بالعربية → اكتب كل شيء بالعربية. إذا كان بالإنجليزية → اكتب كل شيء بالإنجليزية.
 
-Your task: Perform a deep, customized analysis of the specific contract provided. Every report must reflect the actual content of THIS contract - never use generic templates.
+أعد JSON فقط. لا تكتب أي نص قبله أو بعده. لا backticks. ابدأ مباشرة بـ { وانته بـ }
 
-MANDATORY OUTPUT: Return ONLY a JSON object. No text before or after. No markdown code blocks. No backticks. Start directly with { and end with }.
-
-JSON structure:
 {
-  "contractLanguage": "arabic or english",
-  "contractType": "specific contract type based on actual content",
-  "riskLevel": "عالي or متوسط or منخفض (if arabic) / High or Medium or Low (if english)",
-  "overallScore": <number 40-90 based on actual contract quality>,
-  "executiveSummary": "3-4 sentences describing THIS specific contract, parties, value, duration, and key purpose",
-  "partiesAnalysis": {
-    "party1": "party name and role",
-    "party2": "party name and role", 
-    "obligationsBalance": "assessment of obligations balance between parties with specific examples from the contract"
-  },
-  "financialTerms": {
-    "contractValue": "exact value from contract",
-    "paymentSchedule": "exact payment terms from contract",
-    "penalties": "exact penalty clauses from contract",
-    "vatTreatment": "VAT handling in the contract",
-    "financialRiskAssessment": "assessment of financial terms fairness"
-  },
+  "lang": "ar",
+  "contractType": "نوع العقد",
+  "riskLevel": "عالي",
+  "score": 65,
+  "summary": "ملخص تنفيذي مفصل في 3 جمل",
+  "recommendation": "توصية شاملة بالتوقيع أو التعديل",
+  "party1": "اسم الطرف الأول ودوره",
+  "party2": "اسم الطرف الثاني ودوره",
+  "partiesBalance": "تقييم توازن الالتزامات",
+  "contractValue": "قيمة العقد",
+  "paymentTerms": "شروط الدفع",
+  "penalties": "الغرامات",
+  "vat": "ضريبة القيمة المضافة",
   "risks": [
-    {
-      "title": "specific risk title",
-      "detail": "detailed explanation of why this is a risk",
-      "contractQuote": "exact quote from the contract that creates this risk",
-      "severity": "عالي or متوسط or منخفض / High or Medium or Low",
-      "recommendation": "specific actionable recommendation"
-    }
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "عالي", "fix": "التوصية"}
   ],
-  "missingClauses": [
-    {
-      "clause": "clause name",
-      "importance": "عالي or متوسط / High or Medium",
-      "reason": "why this clause is essential for this type of contract",
-      "suggestedText": "proposed clause text in the contract language"
-    }
+  "missing": [
+    {"name": "اسم البند", "why": "سبب الأهمية", "text": "نص مقترح", "level": "عالي"}
   ],
-  "criticalClauses": [
-    {
-      "title": "clause title",
-      "currentText": "actual text from contract",
-      "problem": "specific problem with current wording",
-      "suggestedAmendment": "proposed better wording"
-    }
+  "critical": [
+    {"title": "عنوان البند", "current": "النص الحالي", "problem": "المشكلة", "suggested": "التعديل المقترح"}
   ],
-  "saudiLawCompliance": [
-    {
-      "regulation": "specific Saudi law or regulation",
-      "status": "compliant or non-compliant or needs-review",
-      "details": "specific compliance notes"
-    }
+  "compliance": [
+    {"law": "النظام", "status": "متوافق", "note": "تفاصيل"}
   ],
-  "negotiationStrategy": {
-    "topPriority": "single most important negotiation point",
-    "tips": [
-      {
-        "point": "negotiation point",
-        "approach": "how to negotiate this",
-        "leverage": "your leverage on this point"
-      }
-    ]
-  },
-  "contractDuration": {
-    "period": "contract duration from contract",
-    "renewalTerms": "renewal conditions",
-    "terminationConditions": "termination clauses",
-    "assessment": "assessment of duration terms"
-  },
-  "overallRecommendation": "Clear recommendation: sign as-is / sign after specific amendments / requires legal review before signing - with specific reasons based on THIS contract"
+  "negotiation": [
+    {"point": "نقطة التفاوض", "how": "الأسلوب", "leverage": "نقطة قوتك"}
+  ],
+  "duration": "مدة العقد",
+  "renewal": "شروط التجديد",
+  "termination": "شروط الإنهاء"
 }
 
-STRICT RULES:
-- risks must have minimum 4 items based on actual contract content
-- missingClauses must have minimum 3 items 
-- criticalClauses must have minimum 2 items
-- saudiLawCompliance must have minimum 3 items
-- negotiationStrategy.tips must have minimum 3 items
-- Quote actual text from the contract in contractQuote fields
-- overallScore must be a real number reflecting actual contract quality
-- Every field must reflect THIS specific contract, not generic content
-- Return ONLY the JSON object, nothing else`;
+قواعد صارمة:
+- risks يجب أن يحتوي على 4 عناصر على الأقل
+- missing يجب أن يحتوي على 3 عناصر على الأقل  
+- critical يجب أن يحتوي على 2 عناصر على الأقل
+- compliance يجب أن يحتوي على 3 عناصر على الأقل
+- negotiation يجب أن يحتوي على 3 عناصر على الأقل
+- اقتبس من نص العقد الفعلي في حقل quote
+- score يجب أن يكون رقماً حقيقياً بين 40 و90`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -113,34 +73,33 @@ STRICT RULES:
       }),
     });
 
-    const data = await response.json();
+    const data = await resp.json();
+    if (!resp.ok) return res.status(resp.status).json({ error: data });
 
-    if (!response.ok) {
-      console.error("Anthropic error:", JSON.stringify(data));
-      return res.status(response.status).json({ error: data });
+    const raw = data.content?.find(b => b.type === "text")?.text || "";
+    
+    // Extract JSON aggressively
+    let parsed = null;
+    const texts = [
+      raw.trim(),
+      raw.replace(/```json/gi,"").replace(/```/g,"").trim(),
+    ];
+    
+    for (const t of texts) {
+      try { parsed = JSON.parse(t); break; } catch {}
+    }
+    
+    if (!parsed) {
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
 
-    // Clean the response to ensure pure JSON
-    const rawText = data.content?.find(b => b.type === "text")?.text || "";
-    const cleanText = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    // Replace the text in the response with cleaned version
-    if (data.content) {
-      data.content = data.content.map(block => {
-        if (block.type === "text") {
-          return { ...block, text: cleanText };
-        }
-        return block;
-      });
-    }
-
-    return res.status(200).json(data);
-  } catch (err) {
-    console.error("Handler error:", err.message);
-    return res.status(500).json({ error: err.message });
+    if (parsed) return res.status(200).json({ ok: true, data: parsed });
+    return res.status(200).json({ ok: false, raw });
+    
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 }
+EOF
+echo "analyze done: $(wc -l < /mnt/user-data/outputs/FINAL_analyze.js) lines"
