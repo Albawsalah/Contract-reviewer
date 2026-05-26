@@ -1,64 +1,79 @@
-cat > /mnt/user-data/outputs/FINAL_analyze.js << 'EOF'
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  
   const { messages } = req.body;
   if (!messages) return res.status(400).json({ error: "no messages" });
-  
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "no api key" });
+  if (!apiKey) return res.status(500).json({ error: "API key not configured" });
 
-  const system = `أنت خبير مراجعة عقود في السعودية.
+  const system = `You are an expert contract reviewer combining three roles:
+1. Senior Procurement Manager with 20 years in Saudi Arabia
+2. Legal Consultant specialized in Saudi commercial contracts
+3. Expert commercial negotiator in the Saudi market
 
-قاعدة اللغة: إذا كان العقد بالعربية → اكتب كل شيء بالعربية. إذا كان بالإنجليزية → اكتب كل شيء بالإنجليزية.
+CRITICAL LANGUAGE RULE: 
+- If the contract is in Arabic → write ALL fields in Arabic
+- If the contract is in English → write ALL fields in English
+- Match language exactly to the contract
 
-أعد JSON فقط. لا تكتب أي نص قبله أو بعده. لا backticks. ابدأ مباشرة بـ { وانته بـ }
+Return ONLY a valid JSON object. Absolutely no text before or after. No backticks. No markdown. Start with { and end with }.
 
 {
-  "lang": "ar",
-  "contractType": "نوع العقد",
-  "riskLevel": "عالي",
-  "score": 65,
-  "summary": "ملخص تنفيذي مفصل في 3 جمل",
-  "recommendation": "توصية شاملة بالتوقيع أو التعديل",
-  "party1": "اسم الطرف الأول ودوره",
-  "party2": "اسم الطرف الثاني ودوره",
-  "partiesBalance": "تقييم توازن الالتزامات",
-  "contractValue": "قيمة العقد",
-  "paymentTerms": "شروط الدفع",
-  "penalties": "الغرامات",
-  "vat": "ضريبة القيمة المضافة",
+  "contractLanguage": "arabic",
+  "contractType": "نوع العقد المحدد",
+  "riskLevel": "عالي أو متوسط أو منخفض",
+  "overallScore": 65,
+  "executiveSummary": "ملخص تنفيذي مفصل في 3-4 جمل يصف العقد وأطرافه وقيمته ومدته وأبرز ما يميزه",
+  "overallRecommendation": "توصية واضحة: هل يُوقَّع كما هو أم بعد تعديلات محددة أم يحتاج مراجعة قانونية",
+  "partiesAnalysis": {
+    "party1": "اسم ودور الطرف الأول",
+    "party2": "اسم ودور الطرف الثاني",
+    "obligationsBalance": "تقييم توازن الالتزامات بين الطرفين مع أمثلة محددة"
+  },
+  "financialTerms": {
+    "contractValue": "قيمة العقد من النص",
+    "paymentSchedule": "شروط الدفع من النص",
+    "penalties": "الغرامات والجزاءات من النص",
+    "vatTreatment": "معالجة ضريبة القيمة المضافة",
+    "financialRiskAssessment": "تقييم عدالة الشروط المالية"
+  },
   "risks": [
-    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "عالي", "fix": "التوصية"}
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "contractQuote": "اقتباس من نص العقد", "severity": "عالي", "recommendation": "توصية محددة"},
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "contractQuote": "اقتباس من نص العقد", "severity": "متوسط", "recommendation": "توصية محددة"},
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "contractQuote": "اقتباس من نص العقد", "severity": "منخفض", "recommendation": "توصية محددة"},
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "contractQuote": "اقتباس من نص العقد", "severity": "متوسط", "recommendation": "توصية محددة"}
   ],
-  "missing": [
-    {"name": "اسم البند", "why": "سبب الأهمية", "text": "نص مقترح", "level": "عالي"}
+  "missingClauses": [
+    {"clause": "اسم البند", "importance": "عالي", "reason": "سبب الأهمية", "suggestedText": "نص مقترح للبند"},
+    {"clause": "اسم البند", "importance": "متوسط", "reason": "سبب الأهمية", "suggestedText": "نص مقترح للبند"},
+    {"clause": "اسم البند", "importance": "متوسط", "reason": "سبب الأهمية", "suggestedText": "نص مقترح للبند"}
   ],
-  "critical": [
-    {"title": "عنوان البند", "current": "النص الحالي", "problem": "المشكلة", "suggested": "التعديل المقترح"}
+  "criticalClauses": [
+    {"title": "عنوان البند", "currentText": "النص الحالي من العقد", "problem": "المشكلة", "suggestedAmendment": "التعديل المقترح"},
+    {"title": "عنوان البند", "currentText": "النص الحالي من العقد", "problem": "المشكلة", "suggestedAmendment": "التعديل المقترح"}
   ],
-  "compliance": [
-    {"law": "النظام", "status": "متوافق", "note": "تفاصيل"}
+  "saudiLawCompliance": [
+    {"regulation": "النظام أو اللائحة", "status": "متوافق", "details": "التفاصيل"},
+    {"regulation": "النظام أو اللائحة", "status": "يحتاج مراجعة", "details": "التفاصيل"},
+    {"regulation": "النظام أو اللائحة", "status": "غير متوافق", "details": "التفاصيل"}
   ],
-  "negotiation": [
-    {"point": "نقطة التفاوض", "how": "الأسلوب", "leverage": "نقطة قوتك"}
-  ],
-  "duration": "مدة العقد",
-  "renewal": "شروط التجديد",
-  "termination": "شروط الإنهاء"
-}
-
-قواعد صارمة:
-- risks يجب أن يحتوي على 4 عناصر على الأقل
-- missing يجب أن يحتوي على 3 عناصر على الأقل  
-- critical يجب أن يحتوي على 2 عناصر على الأقل
-- compliance يجب أن يحتوي على 3 عناصر على الأقل
-- negotiation يجب أن يحتوي على 3 عناصر على الأقل
-- اقتبس من نص العقد الفعلي في حقل quote
-- score يجب أن يكون رقماً حقيقياً بين 40 و90`;
+  "negotiationStrategy": {
+    "topPriority": "أهم نقطة تفاوضية",
+    "tips": [
+      {"point": "نقطة التفاوض", "approach": "الأسلوب", "leverage": "نقطة قوتك"},
+      {"point": "نقطة التفاوض", "approach": "الأسلوب", "leverage": "نقطة قوتك"},
+      {"point": "نقطة التفاوض", "approach": "الأسلوب", "leverage": "نقطة قوتك"}
+    ]
+  },
+  "contractDuration": {
+    "period": "مدة العقد",
+    "renewalTerms": "شروط التجديد",
+    "terminationConditions": "شروط الإنهاء",
+    "assessment": "التقييم"
+  }
+}`;
 
   try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -73,33 +88,48 @@ export default async function handler(req, res) {
       }),
     });
 
-    const data = await resp.json();
-    if (!resp.ok) return res.status(resp.status).json({ error: data });
+    const data = await response.json();
 
-    const raw = data.content?.find(b => b.type === "text")?.text || "";
-    
-    // Extract JSON aggressively
-    let parsed = null;
-    const texts = [
-      raw.trim(),
-      raw.replace(/```json/gi,"").replace(/```/g,"").trim(),
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data });
+    }
+
+    // Get raw text
+    const rawText = data.content?.find(b => b.type === "text")?.text || "";
+
+    // Parse JSON on server side - multiple attempts
+    let parsedReport = null;
+
+    const cleaningAttempts = [
+      rawText.trim(),
+      rawText.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim(),
+      rawText.replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim(),
+      rawText.replace(/^[^{]*({[\s\S]*})[^}]*$/, "$1").trim(),
     ];
-    
-    for (const t of texts) {
-      try { parsed = JSON.parse(t); break; } catch {}
-    }
-    
-    if (!parsed) {
-      const m = raw.match(/\{[\s\S]*\}/);
-      if (m) try { parsed = JSON.parse(m[0]); } catch {}
+
+    for (const attempt of cleaningAttempts) {
+      try {
+        parsedReport = JSON.parse(attempt);
+        break;
+      } catch {}
     }
 
-    if (parsed) return res.status(200).json({ ok: true, data: parsed });
-    return res.status(200).json({ ok: false, raw });
-    
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+    // If still not parsed, try regex extraction
+    if (!parsedReport) {
+      const match = rawText.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { parsedReport = JSON.parse(match[0]); } catch {}
+      }
+    }
+
+    // Return parsed report directly, or raw text as fallback
+    if (parsedReport) {
+      return res.status(200).json({ parsed: parsedReport });
+    } else {
+      return res.status(200).json({ raw: rawText });
+    }
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 }
-EOF
-echo "analyze done: $(wc -l < /mnt/user-data/outputs/FINAL_analyze.js) lines"
