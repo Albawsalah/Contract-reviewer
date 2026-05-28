@@ -81,10 +81,17 @@ export default async function handler(req, res) {
     
     // Extract JSON aggressively
     let parsed = null;
-    const texts = [
-      raw.trim(),
-      raw.replace(/```json/gi,"").replace(/```/g,"").trim(),
-    ];
+const cleaned = raw
+  .replace(/^[\s\S]*?```json\s*/i, "")
+  .replace(/^```json\s*/i, "")
+  .replace(/^```\s*/i, "")
+  .replace(/\s*```[\s\S]*$/i, "")
+  .trim();
+
+const texts = [
+  cleaned,
+  raw.trim(),
+];
     
     for (const t of texts) {
       try { parsed = JSON.parse(t); break; } catch {}
