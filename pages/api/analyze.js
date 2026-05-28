@@ -7,13 +7,11 @@ export default async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "no api key" });
 
-  const system = `أنت خبير مدير مشتريات بخبرة 30 سنة ومتخصص في مراجعة عقود حسب نظام العقود في السعودية.
+  const system = `أنت خبير مراجعة عقود في السعودية.
 
-قاعدة اللغة: إذا كان العقد بالعربية → اكتب كل شيء بالعربية. إذا كان بالإنجليزية → اكتب كل شيء بالإنجليزية.
-قاعدة التصميم: قم بتصميم تقرير بتنسيق مناسب وجميل يكون مقروء للمستخدم بسهولة وترتيب واحذف اي اقواس او زوائد من التصميم.
+قاعدة اللغة: إذا كان العقد بالعربية اكتب كل شيء بالعربية. إذا كان بالإنجليزية اكتب كل شيء بالإنجليزية.
 
-
-أعد JSON فقط. لا تكتب أي نص قبله أو بعده. لا backticks. ابدأ مباشرة بـ { وانته بـ }
+أعد JSON فقط. ابدأ مباشرة بـ { وانته بـ } بدون أي نص قبله أو بعده ولا backticks.
 
 {
   "lang": "ar",
@@ -30,33 +28,34 @@ export default async function handler(req, res) {
   "penalties": "الغرامات",
   "vat": "ضريبة القيمة المضافة",
   "risks": [
-    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "عالي", "fix": "التوصية"}
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "عالي", "fix": "التوصية"},
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "متوسط", "fix": "التوصية"},
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "منخفض", "fix": "التوصية"},
+    {"title": "عنوان الخطر", "detail": "وصف مفصل", "quote": "اقتباس من العقد", "level": "متوسط", "fix": "التوصية"}
   ],
   "missing": [
-    {"name": "اسم البند", "why": "سبب الأهمية", "text": "نص مقترح", "level": "عالي"}
+    {"name": "اسم البند", "why": "سبب الأهمية", "text": "نص مقترح", "level": "عالي"},
+    {"name": "اسم البند", "why": "سبب الأهمية", "text": "نص مقترح", "level": "متوسط"},
+    {"name": "اسم البند", "why": "سبب الأهمية", "text": "نص مقترح", "level": "متوسط"}
   ],
   "critical": [
+    {"title": "عنوان البند", "current": "النص الحالي", "problem": "المشكلة", "suggested": "التعديل المقترح"},
     {"title": "عنوان البند", "current": "النص الحالي", "problem": "المشكلة", "suggested": "التعديل المقترح"}
   ],
   "compliance": [
-    {"law": "النظام", "status": "متوافق", "note": "تفاصيل"}
+    {"law": "النظام", "status": "متوافق", "note": "تفاصيل"},
+    {"law": "النظام", "status": "يحتاج مراجعة", "note": "تفاصيل"},
+    {"law": "النظام", "status": "غير متوافق", "note": "تفاصيل"}
   ],
   "negotiation": [
+    {"point": "نقطة التفاوض", "how": "الأسلوب", "leverage": "نقطة قوتك"},
+    {"point": "نقطة التفاوض", "how": "الأسلوب", "leverage": "نقطة قوتك"},
     {"point": "نقطة التفاوض", "how": "الأسلوب", "leverage": "نقطة قوتك"}
   ],
   "duration": "مدة العقد",
   "renewal": "شروط التجديد",
   "termination": "شروط الإنهاء"
-}
-
-قواعد صارمة:
-- risks يجب أن يحتوي على 4 عناصر على الأقل
-- missing يجب أن يحتوي على 3 عناصر على الأقل  
-- critical يجب أن يحتوي على 2 عناصر على الأقل
-- compliance يجب أن يحتوي على 3 عناصر على الأقل
-- negotiation يجب أن يحتوي على 3 عناصر على الأقل
-- اقتبس من نص العقد الفعلي في حقل quote
-- score يجب أن يكون رقماً حقيقياً بين 40 و90`;
+}`;
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -79,27 +78,20 @@ export default async function handler(req, res) {
 
     const raw = data.content?.find(b => b.type === "text")?.text || "";
     
-    // Extract JSON aggressively
-    let parsed = null;
-const cleaned = raw
-  .replace(/^[\s\S]*?```json\s*/i, "")
-  .replace(/^```json\s*/i, "")
-  .replace(/^```\s*/i, "")
-  .replace(/\s*```[\s\S]*$/i, "")
-  .trim();
-
-const texts = [
-  cleaned,
-  raw.trim(),
-];
+    // استخراج JSON بأخذ كل شيء من أول { لآخر }
+    const firstBrace = raw.indexOf("{");
+    const lastBrace = raw.lastIndexOf("}");
     
-    for (const t of texts) {
-      try { parsed = JSON.parse(t); break; } catch {}
+    let parsed = null;
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const extracted = raw.slice(firstBrace, lastBrace + 1);
+      try { parsed = JSON.parse(extracted); } catch {}
     }
     
+    // محاولة ثانية
     if (!parsed) {
-      const m = raw.match(/\{[\s\S]*\}/);
-      if (m) try { parsed = JSON.parse(m[0]); } catch {}
+      try { parsed = JSON.parse(raw.trim()); } catch {}
     }
 
     if (parsed) return res.status(200).json({ ok: true, data: parsed });
